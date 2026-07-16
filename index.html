@@ -281,13 +281,15 @@
     </div>
 
     <div class="settings-section">
-      <h3>Backup</h3>
-      <p class="hint" style="margin:0 0 14px">Settings are saved in this browser. Export a config file to move your setup to another device, or commit it alongside the page.</p>
+      <h3>Backup &amp; publishing</h3>
+      <p class="hint" style="margin:0 0 14px">To publish your setup for everyone: make your changes here, click <strong>Export config</strong>, then upload the file to your GitHub repo (same folder as this page) named exactly <strong>app-hub-config.json</strong>. Visitors automatically load that file. Your own in-browser edits override it for you until you reset.</p>
       <div class="row">
         <div><button class="btn" id="exportBtn">Export config (JSON)</button></div>
         <div><button class="btn" id="importBtn">Import config</button>
         <input type="file" id="importFile" accept="application/json" hidden></div>
+        <div><button class="btn danger" id="resetBtn">Reset to published config</button></div>
       </div>
+      <p class="hint" style="margin-top:12px" id="remoteStatus">Published config: checking…</p>
     </div>
   </section>
 </main>
@@ -337,7 +339,8 @@
   var memStore = {};
   var storage = {
     get: function(k){ try { return localStorage.getItem(k); } catch(e){ return memStore[k] || null; } },
-    set: function(k,v){ try { localStorage.setItem(k,v); } catch(e){ memStore[k] = v; } }
+    set: function(k,v){ try { localStorage.setItem(k,v); } catch(e){ memStore[k] = v; } },
+    remove: function(k){ try { localStorage.removeItem(k); } catch(e){ delete memStore[k]; } }
   };
 
   var KEY = 'appHubConfig';
@@ -356,17 +359,25 @@
     ]
   };
 
-  var config;
-  try { config = JSON.parse(storage.get(KEY)) || defaultConfig; }
+  var config, hasLocal = false;
+  try {
+    var stored = JSON.parse(storage.get(KEY));
+    if (stored && Array.isArray(stored.apps)){ config = stored; hasLocal = true; }
+    else config = defaultConfig;
+  }
   catch(e){ config = defaultConfig; }
-  if (!config.apps) config.apps = [];
-  if (config.wmOpacity == null) config.wmOpacity = 8;
-  if (!config.wmMode) config.wmMode = 'cover';
+  normalize(config);
+
+  function normalize(c){
+    if (!c.apps) c.apps = [];
+    if (c.wmOpacity == null) c.wmOpacity = 8;
+    if (!c.wmMode) c.wmMode = 'cover';
+  }
 
   var unlocked = false; // per page-load session
 
   function id(){ return 'a' + Math.random().toString(36).slice(2,9); }
-  function save(){ storage.set(KEY, JSON.stringify(config)); }
+  function save(){ hasLocal = true; storage.set(KEY, JSON.stringify(config)); }
   function esc(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -733,6 +744,44 @@
   });
 
   renderAll();
+
+  /* ---------- published config (app-hub-config.json in the repo) ---------- */
+  var remoteConfig = null;
+  var remoteStatus = document.getElementById('remoteStatus');
+
+  fetch('app-hub-config.json?v=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if (data && Array.isArray(data.apps)){
+        remoteConfig = data;
+        normalize(remoteConfig);
+        remoteStatus.textContent = 'Published config: found in repo (' + remoteConfig.apps.length + ' apps).';
+        if (!hasLocal){
+          // Visitor with no local edits: show the published setup.
+          // Intentionally NOT saved to local storage, so they keep tracking future updates.
+          config = remoteConfig;
+          renderAll();
+          nameInput.value = config.companyName || '';
+        }
+      } else {
+        remoteStatus.textContent = 'Published config: app-hub-config.json not found in repo yet.';
+      }
+    })
+    .catch(function(){
+      remoteStatus.textContent = 'Published config: not available (offline or local file).';
+    });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!remoteConfig){ toast('No published config found to reset to'); return; }
+    if (confirm('Discard your local changes and reload the published config?')){
+      storage.remove(KEY);
+      config = JSON.parse(JSON.stringify(remoteConfig));
+      hasLocal = false;
+      renderAll();
+      nameInput.value = config.companyName || '';
+      toast('Reset to published config');
+    }
+  });
 })();
 </script>
 </body>
