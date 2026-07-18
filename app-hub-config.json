@@ -15,10 +15,24 @@
     },
     {
       "id": "a1c5i3qz",
-      "name": "DC17 Temperature Status",
+      "name": "DC17 Temperature Status Board",
       "url": "https://dpr-dc17.github.io/DC17-Room-Temps/",
       "tag": "Field",
       "desc": "Temperature tracking"
+    },
+    {
+      "id": "ak2cgikk",
+      "name": "DC17 - Circuit Status",
+      "url": "https://dpr-dc17.github.io/DC17-Circuit-Status",
+      "tag": "Tool",
+      "desc": "One-Line Circuit Status"
+    },
+    {
+      "id": "a7zo8jb9",
+      "name": "Trade Calc",
+      "url": "https://dpr-dc17.github.io/tradecalc/",
+      "tag": "Tool",
+      "desc": "Trade Calculator"
     }
   ]
 }
