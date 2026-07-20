@@ -26,13 +26,6 @@
       "url": "https://dpr-dc17.github.io/DC17-Room-Temps/",
       "tag": "Field",
       "desc": "Temperature tracking"
-    },
-    {
-      "id": "a7zo8jb9",
-      "name": "Trade Calc",
-      "url": "https://dpr-dc17.github.io/tradecalc/",
-      "tag": "Tool",
-      "desc": "Trade Calculator"
     }
   ]
 }
